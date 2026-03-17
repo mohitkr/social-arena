@@ -29,7 +29,7 @@ class PrisonersDilemmaTask(BaseTask):
     def observe(self, agent_id: str, round_number: int) -> Observation:
         opponent_id = [a for a in self.agent_ids if a != agent_id][0]
         opponent_history = [
-            {"round": h["round"], "opponent_action": h["actions"].get(agent_id, "?")}
+            {"round": h["round"], "opponent_action": h["actions"].get(opponent_id, "?")}
             for h in self.history
         ]
         return Observation(
