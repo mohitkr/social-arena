@@ -4,8 +4,8 @@ from .agent import BaseAgent
 
 PROVIDER_MODELS = {
     "anthropic": ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
-    "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4o-mini"],
-    "gemini": ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+    "openai": ["gpt-4o", "gpt-4o-mini", "gpt-4.1-mini"],
+    "gemini": ["gemini-2.5-pro", "gemini-2.0-flash-lite", "gemini-1.5-pro", "gemini-1.5-flash"],
 }
 
 class LLMAgent(BaseAgent):
