@@ -231,9 +231,9 @@ th.sortable.sort-desc::after{content:" ▼";color:#58a6ff}
         <textarea id="ag-prompt" rows="4" placeholder="You are a strategic social agent. Always respond with valid JSON containing action_type, content, and optionally reasoning."></textarea>
       </div>
       <div class="form-group">
-        <label id="api-key-label">Anthropic API Key</label>
-        <input type="password" id="ag-api-key" placeholder="Paste your API key here" autocomplete="off">
-        <div class="text-sm text-muted mt-8" style="margin-top:5px">🔒 Stored in server memory only, never written to disk.</div>
+        <label id="api-key-label">Anthropic API Key <span class="text-muted" style="font-weight:400;text-transform:none">(optional)</span></label>
+        <input type="password" id="ag-api-key" placeholder="Leave blank to use the server's API key" autocomplete="off">
+        <div class="text-sm text-muted" style="margin-top:5px">🔒 Leave blank to submit a community agent — the server's key will be used to run it. Your key is stored in memory only, never on disk.</div>
       </div>
     </div>
 
@@ -347,6 +347,24 @@ th.sortable.sort-desc::after{content:" ▼";color:#58a6ff}
 </div><!-- /content -->
 </div><!-- /app -->
 
+<!-- ═══ PROMPT EDITOR MODAL ═══ -->
+<div id="prompt-modal" class="modal-overlay">
+  <div class="modal" style="width:620px">
+    <div class="modal-title">System Prompt — <span id="prompt-modal-name" style="color:#58a6ff"></span></div>
+    <div class="form-group">
+      <label>System Prompt</label>
+      <textarea id="prompt-modal-text" rows="14" style="font-family:'SF Mono','Fira Code',monospace;font-size:0.8rem;line-height:1.55"></textarea>
+    </div>
+    <div class="text-sm text-muted" style="margin-top:-8px;margin-bottom:12px">
+      This is the persona and strategy the LLM uses for every turn. Changes apply to future matches immediately.
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePromptModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePrompt()">💾 Save Prompt</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── State ───────────────────────────────────────────────────────────────────
 let state = {
@@ -399,13 +417,20 @@ function renderAgents() {
     const providerBadge = a.agent_type === 'mock'
       ? `<span class="badge badge-gray">${a.model}</span>`
       : `<span class="badge badge-blue">${a.provider}</span> <span class="badge badge-purple">${a.model}</span>`;
+    const communityBadge = a.community
+      ? `<span class="badge badge-orange" title="Uses server API key">community</span>`
+      : '';
+    const promptBtn = a.agent_type === 'llm'
+      ? `<button class="btn btn-secondary btn-icon btn-sm" onclick="openPromptModal('${a.agent_id}')" title="View / Edit System Prompt">📋</button>`
+      : '';
     return `
     <div class="agent-card">
       <div class="agent-actions">
+        ${promptBtn}
         <button class="btn btn-danger btn-icon btn-sm" onclick="deleteAgent('${a.agent_id}')" title="Remove">✕</button>
       </div>
       <div class="agent-name">${esc(a.name)}</div>
-      <div class="agent-meta">${providerBadge}</div>
+      <div class="agent-meta" style="display:flex;gap:5px;flex-wrap:wrap">${providerBadge}${communityBadge}</div>
       <div class="agent-stats">
         <div class="stat"><div class="stat-val">${a.score.toFixed(1)}</div><div class="stat-lbl">TrueSkill</div></div>
         <div class="stat"><div class="stat-val">${a.wins}/${a.matches}</div><div class="stat-lbl">W/M</div></div>
@@ -454,8 +479,7 @@ async function registerAgent() {
     body.provider = document.getElementById('ag-provider').value;
     body.model = document.getElementById('ag-model').value;
     body.system_prompt = document.getElementById('ag-prompt').value;
-    body.api_key = document.getElementById('ag-api-key').value.trim();
-    if (!body.api_key) { alert('Please enter an API key for LLM agents.'); return; }
+    body.api_key = document.getElementById('ag-api-key').value.trim() || null;
   }
   const res = await fetch('/api/agents', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
   if (!res.ok) { const e = await res.json(); alert('Error: ' + e.detail); return; }
@@ -726,6 +750,41 @@ async function loadHistory() {
     </div>`;
   }).join('');
 }
+
+// ── Prompt Modal ─────────────────────────────────────────────────────────────
+let promptModalAgentId = null;
+
+function openPromptModal(agentId) {
+  const agent = state.agents.find(a => a.agent_id === agentId);
+  if (!agent) return;
+  promptModalAgentId = agentId;
+  document.getElementById('prompt-modal-name').textContent = agent.name;
+  document.getElementById('prompt-modal-text').value = agent.system_prompt || '';
+  document.getElementById('prompt-modal').classList.add('open');
+}
+
+function closePromptModal() {
+  document.getElementById('prompt-modal').classList.remove('open');
+  promptModalAgentId = null;
+}
+
+async function savePrompt() {
+  if (!promptModalAgentId) return;
+  const prompt = document.getElementById('prompt-modal-text').value;
+  const res = await fetch(`/api/agents/${promptModalAgentId}`, {
+    method: 'PATCH',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ system_prompt: prompt }),
+  });
+  if (!res.ok) { const e = await res.json(); alert('Error: ' + e.detail); return; }
+  closePromptModal();
+  await loadAgents();
+}
+
+// Close modal on overlay click
+document.getElementById('prompt-modal').addEventListener('click', function(e) {
+  if (e.target === this) closePromptModal();
+});
 
 // ── Utils ────────────────────────────────────────────────────────────────────
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }

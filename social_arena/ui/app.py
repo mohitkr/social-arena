@@ -214,6 +214,9 @@ class RegisterAgentRequest(BaseModel):
     system_prompt: Optional[str] = None       # for llm
     api_key: Optional[str] = None             # for llm — stored in memory, used to set env var
 
+class UpdateAgentRequest(BaseModel):
+    system_prompt: str
+
 class StartMatchRequest(BaseModel):
     task: str
     agent_ids: list[str]
@@ -248,6 +251,8 @@ async def list_agents():
             "wins": rating.wins if rating else 0,
             "matches": rating.matches_played if rating else 0,
             "avg_pts_per_round": round(rating.avg_pts_per_round, 2) if rating else 0.0,
+            "system_prompt": meta.get("system_prompt", "") if meta.get("agent_type") == "llm" else None,
+            "community": meta.get("community", False),
         })
     return result
 
@@ -272,7 +277,12 @@ async def register_agent(req: RegisterAgentRequest):
             if env_var:
                 os.environ[env_var] = req.api_key
         agent = LLMAgent(config, provider=provider)
-        meta = {"name": req.name, "agent_type": "llm", "provider": provider, "model": model, "agent": agent}
+        meta = {
+            "name": req.name, "agent_type": "llm", "provider": provider, "model": model,
+            "system_prompt": req.system_prompt or "",
+            "community": not bool(req.api_key),  # True = uses server API key
+            "agent": agent,
+        }
     else:
         raise HTTPException(status_code=400, detail=f"Unknown agent_type: {req.agent_type}")
 
@@ -291,6 +301,18 @@ async def delete_agent(agent_id: str):
         del leaderboard.ratings[agent_id]
     _save_agents()
     _save_leaderboard()
+    return {"ok": True}
+
+@app.patch("/api/agents/{agent_id}")
+async def update_agent_prompt(agent_id: str, req: UpdateAgentRequest):
+    if agent_id not in registered_agents:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    meta = registered_agents[agent_id]
+    if meta.get("agent_type") != "llm":
+        raise HTTPException(status_code=400, detail="Only LLM agents have a system prompt")
+    meta["system_prompt"] = req.system_prompt
+    meta["agent"].config.system_prompt = req.system_prompt
+    _save_agents()
     return {"ok": True}
 
 @app.get("/api/leaderboard")
