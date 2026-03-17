@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Arena</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+a{color:#58a6ff;text-decoration:none}
+
+/* Layout */
+.app{display:flex;flex-direction:column;height:100vh}
+.topbar{background:#161b22;border-bottom:1px solid #30363d;padding:0 24px;display:flex;align-items:center;gap:24px;height:56px;flex-shrink:0}
+.logo{font-size:1.2rem;font-weight:700;color:#58a6ff;letter-spacing:-0.5px}
+.logo span{color:#7c3aed}
+nav{display:flex;gap:4px;flex:1}
+.nav-btn{background:none;border:none;color:#8b949e;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.875rem;font-weight:500;transition:all .15s}
+.nav-btn:hover{background:#21262d;color:#c9d1d9}
+.nav-btn.active{background:#21262d;color:#58a6ff}
+.content{flex:1;overflow-y:auto;padding:24px}
+.section{display:none}
+.section.active{display:block}
+
+/* Cards & Panels */
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:1rem;font-weight:600;color:#e6edf3}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:0.875rem;font-weight:500;transition:all .15s}
+.btn-primary{background:#238636;color:#fff}.btn-primary:hover{background:#2ea043}
+.btn-secondary{background:#21262d;color:#c9d1d9;border:1px solid #30363d}.btn-secondary:hover{background:#30363d}
+.btn-danger{background:#b91c1c;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-blue{background:#1f6feb;color:#fff}.btn-blue:hover{background:#388bfd}
+.btn-purple{background:#7c3aed;color:#fff}.btn-purple:hover{background:#8b5cf6}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{padding:4px 10px;font-size:0.8rem}
+.btn-icon{padding:5px 8px}
+
+/* Forms */
+.form-group{margin-bottom:14px}
+label{display:block;font-size:0.8rem;color:#8b949e;margin-bottom:5px;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],input[type=number],select,textarea{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;padding:8px 12px;font-size:0.875rem;outline:none;transition:border .15s}
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:#58a6ff}
+textarea{resize:vertical;font-family:inherit;min-height:80px}
+select option{background:#161b22}
+.radio-group{display:flex;gap:8px}
+.radio-btn{padding:6px 14px;border:1px solid #30363d;border-radius:6px;cursor:pointer;font-size:0.875rem;background:#0d1117;color:#8b949e;transition:all .15s}
+.radio-btn.active{border-color:#58a6ff;color:#58a6ff;background:#0d1117}
+
+/* Tables */
+table{width:100%;border-collapse:collapse}
+th{background:#21262d;color:#8b949e;text-align:left;padding:10px 14px;font-size:0.75rem;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+td{padding:10px 14px;border-bottom:1px solid #21262d;font-size:0.875rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#161b22}
+
+/* Tags & Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:600;text-transform:uppercase}
+.badge-green{background:#033a16;color:#3fb950}
+.badge-blue{background:#031d35;color:#58a6ff}
+.badge-purple{background:#1e1145;color:#a78bfa}
+.badge-orange{background:#3d1f00;color:#f0883e}
+.badge-red{background:#3d0a0a;color:#f85149}
+.badge-gray{background:#21262d;color:#8b949e}
+
+/* Terminal */
+.terminal{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;font-family:'SF Mono','Fira Code',monospace;font-size:0.8rem;line-height:1.6;height:380px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+.terminal .log{color:#c9d1d9}
+.terminal .log-match{color:#58a6ff;font-weight:bold}
+.terminal .log-round{color:#3fb950}
+.terminal .log-result{color:#f0883e;font-weight:bold}
+.terminal .log-judge{color:#a78bfa}
+.terminal .log-error{color:#f85149}
+.terminal .log-end{color:#ffa657;font-weight:bold}
+.terminal-placeholder{color:#484f58;font-style:italic}
+
+/* Agents tab */
+.agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:20px}
+.agent-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;position:relative}
+.agent-card:hover{border-color:#388bfd}
+.agent-name{font-weight:600;color:#e6edf3;font-size:1rem;margin-bottom:4px}
+.agent-meta{font-size:0.78rem;color:#8b949e;margin-bottom:10px}
+.agent-stats{display:flex;gap:10px;font-size:0.8rem}
+.stat{text-align:center}.stat-val{font-weight:700;color:#58a6ff;font-size:1.1rem}
+.stat-lbl{color:#8b949e;font-size:0.7rem}
+.agent-actions{position:absolute;top:12px;right:12px;display:flex;gap:4px}
+
+/* Add agent form */
+.add-agent-form{background:#161b22;border:1px solid #388bfd;border-radius:10px;padding:20px;margin-bottom:20px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Run Match */
+.run-layout{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
+.match-config{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:18px}
+.match-output{display:flex;flex-direction:column;gap:12px}
+.agent-checklist{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.agent-check-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent}
+.agent-check-item:hover{background:#21262d;border-color:#30363d}
+.agent-check-item input{accent-color:#58a6ff}
+.agent-check-item.selected{background:#031d35;border-color:#1f6feb}
+.task-params{margin-top:12px;border-top:1px solid #21262d;padding-top:12px}
+
+/* Results */
+.results-panel{background:#161b22;border:1px solid #3fb950;border-radius:8px;padding:16px;display:none}
+.results-panel.visible{display:block}
+.results-scores{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.result-score-card{background:#0d1117;border-radius:8px;padding:10px 16px;text-align:center;min-width:100px}
+.result-score-card.winner{border:1px solid #3fb950}
+.result-score-name{font-size:0.78rem;color:#8b949e}
+.result-score-val{font-size:1.4rem;font-weight:700;color:#58a6ff;font-family:monospace}
+.result-winner-label{font-size:0.75rem;color:#3fb950;font-weight:600;margin-top:2px}
+
+/* Leaderboard */
+.lb-bar{height:6px;background:#21262d;border-radius:3px;overflow:hidden}
+.lb-bar-fill{height:100%;background:linear-gradient(90deg,#1f6feb,#7c3aed);border-radius:3px;transition:width .4s}
+
+/* History */
+.history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.match-card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;cursor:pointer}
+.match-card:hover{border-color:#388bfd}
+.match-task{font-weight:600;color:#e6edf3;margin-bottom:4px}
+.match-meta{font-size:0.78rem;color:#8b949e;margin-bottom:10px}
+.match-scores{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.score-chip{background:#21262d;border-radius:6px;padding:4px 10px;font-size:0.78rem}
+.score-chip.win{background:#033a16;color:#3fb950}
+.match-winner{font-size:0.8rem;color:#8b949e}
+.match-winner strong{color:#f0883e}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:1000;display:none}
+.modal-overlay.open{display:flex}
+.modal{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:24px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal-title{font-size:1.1rem;font-weight:700;color:#e6edf3;margin-bottom:16px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;border-top:1px solid #21262d;padding-top:14px}
+
+/* Empty state */
+.empty{text-align:center;padding:48px 24px;color:#484f58}
+.empty-icon{font-size:3rem;margin-bottom:12px}
+.empty-text{font-size:0.95rem}
+
+/* Utility */
+.flex{display:flex}.gap-8{gap:8px}.gap-4{gap:4px}.items-center{align-items:center}
+.text-muted{color:#8b949e}.text-sm{font-size:0.8rem}.text-right{text-align:right}
+.mb-0{margin-bottom:0}.mt-8{margin-top:8px}.font-mono{font-family:monospace}
+.w-full{width:100%}.divider{border:none;border-top:1px solid #21262d;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Top Bar -->
+<div class="topbar">
+  <div class="logo">🏟 Social<span>Arena</span></div>
+  <nav>
+    <button class="nav-btn active" onclick="showTab('agents')">Agents</button>
+    <button class="nav-btn" onclick="showTab('run')">Run Match</button>
+    <button class="nav-btn" onclick="showTab('leaderboard')">Leaderboard</button>
+    <button class="nav-btn" onclick="showTab('history')">History</button>
+  </nav>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<!-- ═══ AGENTS TAB ═══ -->
+<div id="tab-agents" class="section active">
+  <div class="card-header">
+    <h2 class="card-title">Registered Agents</h2>
+    <button class="btn btn-primary" onclick="showAddAgent()">+ Add Agent</button>
+  </div>
+
+  <!-- Add Agent Form (hidden by default) -->
+  <div id="add-agent-form" class="add-agent-form" style="display:none">
+    <div class="card-header mb-0" style="margin-bottom:14px">
+      <div class="card-title">Register New Agent</div>
+      <button class="btn btn-secondary btn-sm" onclick="hideAddAgent()">✕ Cancel</button>
+    </div>
+
+    <div class="form-group">
+      <label>Agent Name</label>
+      <input type="text" id="ag-name" placeholder="e.g. My Cooperative Agent">
+    </div>
+
+    <div class="form-group">
+      <label>Agent Type</label>
+      <div class="radio-group">
+        <div class="radio-btn active" onclick="setAgentType('mock')" id="type-mock">Mock (no API key)</div>
+        <div class="radio-btn" onclick="setAgentType('llm')" id="type-llm">LLM (API-backed)</div>
+      </div>
+    </div>
+
+    <!-- Mock options -->
+    <div id="mock-options">
+      <div class="form-group">
+        <label>Strategy</label>
+        <select id="ag-strategy">
+          <option value="cooperative">Cooperative — builds trust, fair offers</option>
+          <option value="competitive">Competitive — defects, anchors hard</option>
+          <option value="tit_for_tat">Tit-for-Tat — mirrors opponent</option>
+          <option value="random">Random — random valid actions</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- LLM options -->
+    <div id="llm-options" style="display:none">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Provider</label>
+          <select id="ag-provider" onchange="updateModels()">
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openai">OpenAI (GPT)</option>
+            <option value="gemini">Google (Gemini)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <select id="ag-model"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>System Prompt</label>
+        <textarea id="ag-prompt" rows="4" placeholder="You are a strategic social agent. Always respond with valid JSON containing action_type, content, and optionally reasoning."></textarea>
+      </div>
+      <div class="form-group">
+        <label id="api-key-label">Anthropic API Key</label>
+        <input type="password" id="ag-api-key" placeholder="Paste your API key here" autocomplete="off">
+        <div class="text-sm text-muted mt-8" style="margin-top:5px">🔒 Stored in server memory only, never written to disk.</div>
+      </div>
+    </div>
+
+    <div class="flex gap-8">
+      <button class="btn btn-primary" onclick="registerAgent()">Register Agent</button>
+      <button class="btn btn-secondary" onclick="hideAddAgent()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Agents Grid -->
+  <div id="agent-grid" class="agent-grid"></div>
+  <div id="agents-empty" class="empty" style="display:none">
+    <div class="empty-icon">🤖</div>
+    <div class="empty-text">No agents registered yet. Add one to get started!</div>
+  </div>
+</div>
+
+<!-- ═══ RUN MATCH TAB ═══ -->
+<div id="tab-run" class="section">
+  <div class="run-layout">
+
+    <!-- Config Panel -->
+    <div class="match-config">
+      <div class="card-title" style="margin-bottom:14px">Match Configuration</div>
+
+      <div class="form-group">
+        <label>Task</label>
+        <select id="task-select" onchange="onTaskChange()"></select>
+      </div>
+
+      <div id="task-description" class="text-sm text-muted" style="margin:-8px 0 12px;padding:8px;background:#21262d;border-radius:6px"></div>
+
+      <div id="task-params"></div>
+
+      <hr class="divider">
+
+      <div class="form-group">
+        <label>Select Agents <span id="agent-count-hint" class="text-muted">(need 2)</span></label>
+        <div id="agent-checklist" class="agent-checklist"></div>
+      </div>
+
+      <button id="run-btn" class="btn btn-purple w-full" onclick="startMatch()" disabled>
+        ▶ Run Match
+      </button>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="match-output">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="background:#21262d;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+          <span class="text-sm" style="color:#8b949e;font-family:monospace">match output</span>
+          <div id="match-status" class="badge badge-gray">idle</div>
+        </div>
+        <div id="terminal" class="terminal">
+          <span class="terminal-placeholder">Run a match to see live output here...</span>
+        </div>
+      </div>
+
+      <!-- Results Panel -->
+      <div id="results-panel" class="results-panel">
+        <div class="card-title" style="margin-bottom:12px">Match Results</div>
+        <div id="results-scores" class="results-scores"></div>
+        <div id="results-metrics" class="text-sm text-muted"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ LEADERBOARD TAB ═══ -->
+<div id="tab-leaderboard" class="section">
+  <div class="card-header">
+    <h2 class="card-title">Global Leaderboard</h2>
+    <button class="btn btn-secondary btn-sm" onclick="loadLeaderboard()">🔄 Refresh</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table id="lb-table">
+      <thead>
+        <tr>
+          <th style="width:50px">Rank</th>
+          <th>Agent</th>
+          <th>Type</th>
+          <th style="text-align:right">TrueSkill (µ−3σ)</th>
+          <th style="text-align:right">W / M</th>
+          <th style="width:200px">Win Rate</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+  <div id="lb-empty" class="empty" style="display:none">
+    <div class="empty-icon">🏆</div>
+    <div class="empty-text">No match data yet. Run some matches first!</div>
+  </div>
+</div>
+
+<!-- ═══ HISTORY TAB ═══ -->
+<div id="tab-history" class="section">
+  <div class="card-header">
+    <h2 class="card-title">Match History</h2>
+    <button class="btn btn-secondary btn-sm" onclick="loadHistory()">🔄 Refresh</button>
+  </div>
+  <div id="history-grid" class="history-grid"></div>
+  <div id="history-empty" class="empty" style="display:none">
+    <div class="empty-icon">📋</div>
+    <div class="empty-text">No matches played yet.</div>
+  </div>
+</div>
+
+</div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+// ── State ───────────────────────────────────────────────────────────────────
+let state = {
+  agents: [],
+  config: { tasks: {}, providers: {}, mock_strategies: [] },
+  agentType: 'mock',
+  selectedAgents: new Set(),
+  matchRunning: false,
+  currentMatchId: null,
+};
+
+// ── Init ────────────────────────────────────────────────────────────────────
+async function init() {
+  const cfg = await fetch('/api/config').then(r => r.json());
+  state.config = cfg;
+  populateTaskSelect();
+  updateModels();
+  await loadAgents();
+  await loadHistory();
+}
+
+// ── Tabs ────────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (tab === 'leaderboard') loadLeaderboard();
+  if (tab === 'history') loadHistory();
+  if (tab === 'run') loadAgents();
+}
+
+// ── Agents Tab ───────────────────────────────────────────────────────────────
+async function loadAgents() {
+  state.agents = await fetch('/api/agents').then(r => r.json());
+  renderAgents();
+  renderAgentChecklist();
+}
+
+function renderAgents() {
+  const grid = document.getElementById('agent-grid');
+  const empty = document.getElementById('agents-empty');
+  if (!state.agents.length) {
+    grid.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+  grid.innerHTML = state.agents.map(a => {
+    const providerBadge = a.agent_type === 'mock'
+      ? `<span class="badge badge-gray">${a.model}</span>`
+      : `<span class="badge badge-blue">${a.provider}</span> <span class="badge badge-purple">${a.model}</span>`;
+    return `
+    <div class="agent-card">
+      <div class="agent-actions">
+        <button class="btn btn-danger btn-icon btn-sm" onclick="deleteAgent('${a.agent_id}')" title="Remove">✕</button>
+      </div>
+      <div class="agent-name">${esc(a.name)}</div>
+      <div class="agent-meta">${providerBadge}</div>
+      <div class="agent-stats">
+        <div class="stat"><div class="stat-val">${a.score.toFixed(1)}</div><div class="stat-lbl">TrueSkill</div></div>
+        <div class="stat"><div class="stat-val">${a.wins}/${a.matches}</div><div class="stat-lbl">W/M</div></div>
+        <div class="stat"><div class="stat-val">${a.matches > 0 ? (a.wins/a.matches*100).toFixed(0)+'%' : '-'}</div><div class="stat-lbl">Win Rate</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showAddAgent() {
+  document.getElementById('add-agent-form').style.display = '';
+  document.getElementById('agents-empty').style.display = 'none';
+}
+function hideAddAgent() {
+  document.getElementById('add-agent-form').style.display = 'none';
+}
+
+function setAgentType(type) {
+  state.agentType = type;
+  document.getElementById('type-mock').classList.toggle('active', type === 'mock');
+  document.getElementById('type-llm').classList.toggle('active', type === 'llm');
+  document.getElementById('mock-options').style.display = type === 'mock' ? '' : 'none';
+  document.getElementById('llm-options').style.display = type === 'llm' ? '' : 'none';
+}
+
+function updateModels() {
+  const provider = document.getElementById('ag-provider')?.value || 'anthropic';
+  const models = state.config.providers[provider] || [];
+  const sel = document.getElementById('ag-model');
+  sel.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+  const labels = { anthropic: 'Anthropic API Key', openai: 'OpenAI API Key', gemini: 'Google Gemini API Key' };
+  const lbl = document.getElementById('api-key-label');
+  if (lbl) lbl.textContent = labels[provider] || 'API Key';
+  const keyInput = document.getElementById('ag-api-key');
+  if (keyInput) keyInput.value = '';
+}
+
+async function registerAgent() {
+  const name = document.getElementById('ag-name').value.trim();
+  if (!name) { alert('Please enter an agent name.'); return; }
+  const body = { name, agent_type: state.agentType };
+  if (state.agentType === 'mock') {
+    body.strategy = document.getElementById('ag-strategy').value;
+  } else {
+    body.provider = document.getElementById('ag-provider').value;
+    body.model = document.getElementById('ag-model').value;
+    body.system_prompt = document.getElementById('ag-prompt').value;
+    body.api_key = document.getElementById('ag-api-key').value.trim();
+    if (!body.api_key) { alert('Please enter an API key for LLM agents.'); return; }
+  }
+  const res = await fetch('/api/agents', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json(); alert('Error: ' + e.detail); return; }
+  document.getElementById('ag-name').value = '';
+  hideAddAgent();
+  await loadAgents();
+}
+
+async function deleteAgent(id) {
+  if (!confirm('Remove this agent?')) return;
+  await fetch('/api/agents/' + id, { method: 'DELETE' });
+  await loadAgents();
+}
+
+// ── Run Match Tab ────────────────────────────────────────────────────────────
+function populateTaskSelect() {
+  const sel = document.getElementById('task-select');
+  sel.innerHTML = Object.entries(state.config.tasks).map(([k, v]) =>
+    `<option value="${k}">${v.label}</option>`
+  ).join('');
+  onTaskChange();
+}
+
+function onTaskChange() {
+  const task = document.getElementById('task-select').value;
+  const meta = state.config.tasks[task];
+  if (!meta) return;
+  document.getElementById('task-description').textContent = meta.description;
+  // Task params
+  const params = document.getElementById('task-params');
+  params.innerHTML = meta.params.map(p => {
+    if (p.type === 'number') {
+      return `<div class="form-group"><label>${p.label}</label><input type="number" id="param-${p.name}" value="${p.default}" min="${p.min||0}" max="${p.max||99999}"></div>`;
+    }
+    return `<div class="form-group"><label>${p.label}</label><input type="text" id="param-${p.name}" value="${esc(p.default)}"></div>`;
+  }).join('');
+  // Update agent count hint
+  document.getElementById('agent-count-hint').textContent =
+    meta.min_agents === meta.max_agents ? `(need ${meta.min_agents})` : `(${meta.min_agents}–${meta.max_agents})`;
+  state.selectedAgents.clear();
+  renderAgentChecklist();
+  updateRunBtn();
+}
+
+function renderAgentChecklist() {
+  const list = document.getElementById('agent-checklist');
+  if (!list) return;
+  if (!state.agents.length) {
+    list.innerHTML = '<div class="text-sm text-muted" style="padding:8px">No agents registered. Go to Agents tab first.</div>';
+    return;
+  }
+  list.innerHTML = state.agents.map(a => {
+    const selected = state.selectedAgents.has(a.agent_id);
+    return `<div class="agent-check-item ${selected ? 'selected' : ''}" onclick="toggleAgent('${a.agent_id}', this)">
+      <span style="font-size:1.1rem">${selected ? '☑' : '☐'}</span>
+      <span style="flex:1">
+        <span style="font-weight:600;color:#e6edf3">${esc(a.name)}</span>
+        <span class="text-muted text-sm"> · ${a.agent_type === 'mock' ? a.model : a.provider}</span>
+      </span>
+    </div>`;
+  }).join('');
+}
+
+function toggleAgent(id, el) {
+  const icon = el.querySelector('span');
+  if (state.selectedAgents.has(id)) {
+    state.selectedAgents.delete(id);
+    el.classList.remove('selected');
+    icon.textContent = '☐';
+  } else {
+    state.selectedAgents.add(id);
+    el.classList.add('selected');
+    icon.textContent = '☑';
+  }
+  updateRunBtn();
+}
+
+function updateRunBtn() {
+  const task = document.getElementById('task-select')?.value;
+  const meta = state.config.tasks[task];
+  const btn = document.getElementById('run-btn');
+  if (!btn || !meta) return;
+  const ok = state.selectedAgents.size >= meta.min_agents && state.selectedAgents.size <= meta.max_agents && !state.matchRunning;
+  btn.disabled = !ok;
+}
+
+async function startMatch() {
+  const task = document.getElementById('task-select').value;
+  const meta = state.config.tasks[task];
+  const params = {};
+  meta.params.forEach(p => {
+    const el = document.getElementById('param-' + p.name);
+    params[p.name] = p.type === 'number' ? Number(el.value) : el.value;
+  });
+
+  const body = { task, agent_ids: [...state.selectedAgents], params };
+  const res = await fetch('/api/matches', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!res.ok) { const e = await res.json(); alert('Error: ' + e.detail); return; }
+  const { match_id } = await res.json();
+  state.matchRunning = true;
+  state.currentMatchId = match_id;
+  updateRunBtn();
+
+  // Reset UI
+  const terminal = document.getElementById('terminal');
+  terminal.innerHTML = '';
+  document.getElementById('match-status').className = 'badge badge-blue';
+  document.getElementById('match-status').textContent = 'running';
+  document.getElementById('results-panel').classList.remove('visible');
+
+  // Stream events
+  const es = new EventSource('/api/matches/' + match_id + '/events');
+  es.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'log') appendLog(msg.message);
+    else if (msg.type === 'result') showResults(msg.data);
+    else if (msg.type === 'error') {
+      appendLog('ERROR: ' + msg.message, 'log-error');
+      setMatchDone('error');
+    } else if (msg.type === 'done') {
+      es.close();
+      setMatchDone('complete');
+    }
+  };
+  es.onerror = () => { es.close(); setMatchDone('error'); };
+}
+
+function appendLog(msg, cls = '') {
+  const term = document.getElementById('terminal');
+  const div = document.createElement('div');
+  // Color-code common patterns
+  if (!cls) {
+    if (msg.startsWith('[Match')) cls = 'log-match';
+    else if (msg.includes('Round') && msg.includes(':')) cls = 'log-round';
+    else if (msg.includes('[End]') || msg.includes('WIN')) cls = 'log-end';
+    else if (msg.includes('[Judge]')) cls = 'log-judge';
+    else if (msg.includes('Complete.') || msg.includes('Scores:')) cls = 'log-result';
+    else cls = 'log';
+  }
+  div.className = cls;
+  div.textContent = msg;
+  term.appendChild(div);
+  term.scrollTop = term.scrollHeight;
+}
+
+function showResults(data) {
+  const panel = document.getElementById('results-panel');
+  const scoresEl = document.getElementById('results-scores');
+  const metricsEl = document.getElementById('results-metrics');
+
+  const sortedAgents = Object.entries(data.scores).sort(([,a],[,b]) => b - a);
+  scoresEl.innerHTML = sortedAgents.map(([aid, score]) => {
+    const isWinner = aid === data.winner;
+    const name = data.agent_names[aid] || aid;
+    return `<div class="result-score-card ${isWinner ? 'winner' : ''}">
+      <div class="result-score-name">${esc(name)}</div>
+      <div class="result-score-val">${typeof score === 'number' ? score.toFixed(1) : score}</div>
+      ${isWinner ? '<div class="result-winner-label">🏆 Winner</div>' : ''}
+    </div>`;
+  }).join('');
+
+  const metrics = data.outcome_metrics || {};
+  const metricLines = Object.entries(metrics)
+    .filter(([,v]) => !Array.isArray(v) && typeof v !== 'object')
+    .map(([k,v]) => `<span style="margin-right:16px"><b>${k.replace(/_/g,' ')}:</b> ${v}</span>`)
+    .join('');
+  metricsEl.innerHTML = metricLines;
+
+  panel.classList.add('visible');
+}
+
+function setMatchDone(status) {
+  state.matchRunning = false;
+  const el = document.getElementById('match-status');
+  if (status === 'complete') { el.className = 'badge badge-green'; el.textContent = 'complete'; }
+  else { el.className = 'badge badge-red'; el.textContent = 'error'; }
+  updateRunBtn();
+  loadAgents(); // Refresh scores
+}
+
+// ── Leaderboard Tab ──────────────────────────────────────────────────────────
+async function loadLeaderboard() {
+  const data = await fetch('/api/leaderboard').then(r => r.json());
+  const tbody = document.getElementById('lb-body');
+  const empty = document.getElementById('lb-empty');
+  if (!data.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = data.map(e => {
+    const typeBadge = e.agent_type === 'mock'
+      ? `<span class="badge badge-gray">${e.provider}</span>`
+      : `<span class="badge badge-blue">${e.provider}</span>`;
+    const pct = Math.round(e.win_rate * 100);
+    return `<tr>
+      <td><span style="color:#8b949e;font-weight:700">#${e.rank}</span></td>
+      <td><span style="font-weight:600;color:#e6edf3">${esc(e.name)}</span></td>
+      <td>${typeBadge}</td>
+      <td class="text-right font-mono" style="color:#58a6ff">${e.score.toFixed(2)}</td>
+      <td class="text-right">${e.wins}/${e.matches}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="lb-bar" style="flex:1"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+          <span class="text-sm text-muted" style="width:32px;text-align:right">${pct}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── History Tab ──────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const data = await fetch('/api/history').then(r => r.json());
+  const grid = document.getElementById('history-grid');
+  const empty = document.getElementById('history-empty');
+  if (!data.length) { grid.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  const categoryColors = { cooperation: 'badge-green', negotiation: 'badge-orange', persuasion: 'badge-purple', social_deduction: 'badge-red', coordination: 'badge-blue', ethics: 'badge-blue' };
+  grid.innerHTML = data.map(m => {
+    const cat = (m.task_category||'').replace('TaskCategory.','');
+    const badgeCls = categoryColors[cat] || 'badge-gray';
+    const sortedScores = Object.entries(m.scores || {}).sort(([,a],[,b]) => b - a);
+    const scoreChips = sortedScores.map(([aid, score]) => {
+      const name = (m.agent_names||{})[aid] || aid;
+      const isWin = aid === m.winner;
+      return `<span class="score-chip ${isWin ? 'win' : ''}">${esc(name)}: ${typeof score === 'number' ? score.toFixed(1) : score}</span>`;
+    }).join('');
+    return `<div class="match-card">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <div class="match-task">${esc(m.task_name)}</div>
+        <span class="badge ${badgeCls}">${cat}</span>
+      </div>
+      <div class="match-meta">${m.timestamp?.slice(0,19)||''} · ${m.rounds_played} rounds · #${m.match_id}</div>
+      <div class="match-scores">${scoreChips}</div>
+      <div class="match-winner">Winner: <strong>${esc(m.winner_name||'—')}</strong></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Utils ────────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
