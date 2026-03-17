@@ -47,7 +47,12 @@ class PrisonersDilemmaTask(BaseTask):
         )
 
     def step(self, agent_id: str, action: Action):
-        choice = action.content if action.content in ("cooperate", "defect") else "cooperate"
+        # Prefer action_type (set correctly by LLM agents); fall back to content for compatibility
+        choice = (
+            action.action_type if action.action_type in ("cooperate", "defect") else
+            action.content if isinstance(action.content, str) and action.content in ("cooperate", "defect") else
+            "cooperate"
+        )
         self.pending_actions[agent_id] = choice
 
         if len(self.pending_actions) == 2:

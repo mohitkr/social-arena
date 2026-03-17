@@ -85,18 +85,53 @@ class LLMAgent(BaseAgent):
         if obs.private_info:
             lines += ["", "**Your private information:**", json.dumps(obs.private_info, indent=2)]
         if obs.history:
-            lines += ["", "**History of actions so far:**"]
+            lines += ["", "**History of previous rounds:**"]
             for entry in obs.history[-10:]:
                 lines.append(json.dumps(entry))
+        else:
+            lines += ["", "**History:** (no previous rounds — this is the first move)"]
         if obs.valid_actions:
             lines += ["", f"**Valid actions:** {', '.join(obs.valid_actions)}"]
-        lines += [
-            "",
-            "Respond ONLY with a JSON object containing:",
-            '  "action_type": one of the valid actions above',
-            '  "content": your action payload (string, number, or object)',
-            '  "reasoning": brief explanation (optional, not shared with opponents)',
-        ]
+
+        # Inline examples tailored to the action type
+        action_set = set(obs.valid_actions or [])
+        if action_set <= {"cooperate", "defect"}:
+            lines += [
+                "",
+                "IMPORTANT: Choose your action strategically based on the history above.",
+                "If the opponent has been defecting, you should defect to avoid being exploited.",
+                "",
+                "Respond ONLY with a JSON object. Example for defecting:",
+                '  {"action_type": "defect", "content": "defect", "reasoning": "opponent defected last round"}',
+                "Example for cooperating:",
+                '  {"action_type": "cooperate", "content": "cooperate", "reasoning": "building trust"}',
+            ]
+        elif "make_offer" in action_set or "accept" in action_set:
+            lines += [
+                "",
+                "Respond ONLY with a JSON object. Examples:",
+                '  {"action_type": "make_offer", "content": "95000", "reasoning": "anchoring near market rate"}',
+                '  {"action_type": "accept", "content": "accept", "reasoning": "offer exceeds my minimum"}',
+                '  {"action_type": "counter_offer", "content": "102000", "reasoning": "splitting the difference"}',
+            ]
+        elif "vote" in action_set:
+            lines += [
+                "",
+                "Respond ONLY with a JSON object. content must be exactly the player name to vote for.",
+                '  {"action_type": "vote", "content": "Alice", "reasoning": "acting suspiciously"}',
+            ]
+        elif "kill" in action_set:
+            lines += [
+                "",
+                "Respond ONLY with a JSON object. content must be exactly the player name to eliminate.",
+                '  {"action_type": "kill", "content": "Bob", "reasoning": "most dangerous villager"}',
+            ]
+        else:
+            lines += [
+                "",
+                "Respond ONLY with a JSON object:",
+                '  {"action_type": "<one of the valid actions>", "content": "<your response>", "reasoning": "<optional>"}',
+            ]
         return "\n".join(lines)
 
     def _parse(self, raw: str, obs: Observation) -> Action:

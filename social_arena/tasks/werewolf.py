@@ -81,7 +81,7 @@ class WerewolfTask(BaseTask):
                 self.phase = "day_vote"
 
         elif self.phase == "day_vote":
-            target_name = action.content if isinstance(action.content, str) else str(action.content)
+            target_name = self._extract_target(action)
             # Resolve name to agent_id
             target_id = self._resolve_name(target_name)
             if target_id and target_id in self.alive:
@@ -92,7 +92,7 @@ class WerewolfTask(BaseTask):
                 self._resolve_day_vote()
 
         elif self.phase == "night":
-            target_name = action.content if isinstance(action.content, str) else str(action.content)
+            target_name = self._extract_target(action)
             target_id = self._resolve_name(target_name)
             if target_id and target_id in self.alive:
                 self.night_kills[agent_id] = target_id
@@ -101,6 +101,17 @@ class WerewolfTask(BaseTask):
             werewolves_alive = [a for a in self.alive if self.roles.get(a) == "werewolf"]
             if len(self.night_kills) >= len(werewolves_alive):
                 self._resolve_night()
+
+    def _extract_target(self, action: Action) -> str:
+        """Extract a player name from an action regardless of whether the LLM put
+        it in content (a string/dict) or embedded it in action_type."""
+        if isinstance(action.content, dict):
+            for key in ("target", "player", "name", "vote"):
+                if key in action.content:
+                    return str(action.content[key])
+        if isinstance(action.content, str) and action.content.strip():
+            return action.content.strip()
+        return action.action_type  # last resort
 
     def _resolve_name(self, name_str: str) -> str | None:
         for aid, agent in self.agents.items():
