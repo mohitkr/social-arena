@@ -117,6 +117,10 @@ tr:hover td{background:#161b22}
 /* Leaderboard */
 .lb-bar{height:6px;background:#21262d;border-radius:3px;overflow:hidden}
 .lb-bar-fill{height:100%;background:linear-gradient(90deg,#1f6feb,#7c3aed);border-radius:3px;transition:width .4s}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:#c9d1d9}
+th.sortable.sort-asc::after{content:" ▲";color:#58a6ff}
+th.sortable.sort-desc::after{content:" ▼";color:#58a6ff}
 
 /* History */
 .history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
@@ -310,11 +314,12 @@ tr:hover td{background:#161b22}
       <thead>
         <tr>
           <th style="width:50px">Rank</th>
-          <th>Agent</th>
+          <th class="sortable" onclick="sortLeaderboard('name')" data-col="name">Agent</th>
           <th>Type</th>
-          <th style="text-align:right">TrueSkill (µ−3σ)</th>
-          <th style="text-align:right">W / M</th>
-          <th style="width:200px">Win Rate</th>
+          <th class="sortable" style="text-align:right" onclick="sortLeaderboard('score')" data-col="score">TrueSkill (µ−3σ)</th>
+          <th class="sortable" style="text-align:right" onclick="sortLeaderboard('avg_pts_per_round')" data-col="avg_pts_per_round">Avg Pts/Round</th>
+          <th class="sortable" style="text-align:right" onclick="sortLeaderboard('matches')" data-col="matches">W / M</th>
+          <th class="sortable" style="width:200px" onclick="sortLeaderboard('win_rate')" data-col="win_rate">Win Rate</th>
         </tr>
       </thead>
       <tbody id="lb-body"></tbody>
@@ -405,6 +410,7 @@ function renderAgents() {
         <div class="stat"><div class="stat-val">${a.score.toFixed(1)}</div><div class="stat-lbl">TrueSkill</div></div>
         <div class="stat"><div class="stat-val">${a.wins}/${a.matches}</div><div class="stat-lbl">W/M</div></div>
         <div class="stat"><div class="stat-val">${a.matches > 0 ? (a.wins/a.matches*100).toFixed(0)+'%' : '-'}</div><div class="stat-lbl">Win Rate</div></div>
+        <div class="stat"><div class="stat-val">${a.avg_pts_per_round != null ? a.avg_pts_per_round.toFixed(2) : '-'}</div><div class="stat-lbl">Avg Pts/Rd</div></div>
       </div>
     </div>`;
   }).join('');
@@ -631,22 +637,56 @@ function setMatchDone(status) {
 }
 
 // ── Leaderboard Tab ──────────────────────────────────────────────────────────
+let lbData = [];
+let lbSort = { col: 'score', dir: 'desc' };
+
 async function loadLeaderboard() {
-  const data = await fetch('/api/leaderboard').then(r => r.json());
+  lbData = await fetch('/api/leaderboard').then(r => r.json());
+  renderLeaderboard();
+}
+
+function sortLeaderboard(col) {
+  if (lbSort.col === col) {
+    lbSort.dir = lbSort.dir === 'desc' ? 'asc' : 'desc';
+  } else {
+    lbSort.col = col;
+    lbSort.dir = col === 'name' ? 'asc' : 'desc';
+  }
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
   const tbody = document.getElementById('lb-body');
   const empty = document.getElementById('lb-empty');
-  if (!data.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  if (!lbData.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
-  tbody.innerHTML = data.map(e => {
+
+  // Update sort indicators on headers
+  document.querySelectorAll('#lb-table th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.dataset.col === lbSort.col) {
+      th.classList.add(lbSort.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+
+  const sorted = [...lbData].sort((a, b) => {
+    const av = a[lbSort.col] ?? '', bv = b[lbSort.col] ?? '';
+    const cmp = typeof av === 'string' ? av.localeCompare(bv) : av - bv;
+    return lbSort.dir === 'asc' ? cmp : -cmp;
+  });
+
+  tbody.innerHTML = sorted.map((e, i) => {
     const typeBadge = e.agent_type === 'mock'
       ? `<span class="badge badge-gray">${e.provider}</span>`
       : `<span class="badge badge-blue">${e.provider}</span>`;
     const pct = Math.round(e.win_rate * 100);
+    const avgPts = e.avg_pts_per_round != null ? e.avg_pts_per_round.toFixed(2) : '—';
     return `<tr>
-      <td><span style="color:#8b949e;font-weight:700">#${e.rank}</span></td>
+      <td><span style="color:#8b949e;font-weight:700">#${i + 1}</span></td>
       <td><span style="font-weight:600;color:#e6edf3">${esc(e.name)}</span></td>
       <td>${typeBadge}</td>
       <td class="text-right font-mono" style="color:#58a6ff">${e.score.toFixed(2)}</td>
+      <td class="text-right font-mono" style="color:#f0883e">${avgPts}</td>
       <td class="text-right">${e.wins}/${e.matches}</td>
       <td>
         <div style="display:flex;align-items:center;gap:8px">

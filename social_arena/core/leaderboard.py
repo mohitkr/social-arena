@@ -11,6 +11,8 @@ class AgentRating:
     rating: trueskill.Rating = field(default_factory=trueskill.Rating)
     matches_played: int = 0
     wins: int = 0
+    total_score: float = 0.0
+    total_rounds: int = 0
     category_ratings: dict = field(default_factory=dict)
 
     @property
@@ -23,6 +25,12 @@ class AgentRating:
         if self.matches_played == 0:
             return 0.0
         return self.wins / self.matches_played
+
+    @property
+    def avg_pts_per_round(self) -> float:
+        if self.total_rounds == 0:
+            return 0.0
+        return self.total_score / self.total_rounds
 
 
 class Leaderboard:
@@ -61,10 +69,13 @@ class Leaderboard:
 
         updated_groups = self.env.rate(rating_groups, ranks=ranks)
 
+        rounds = result.rounds_played or 1
         for group, agent_id in zip(updated_groups, sorted_agents):
             ar = self.ratings[agent_id]
             ar.rating = group[agent_id]
             ar.matches_played += 1
+            ar.total_score += scores.get(agent_id, 0)
+            ar.total_rounds += rounds
             if agent_id == result.winner:
                 ar.wins += 1
 

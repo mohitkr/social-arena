@@ -62,7 +62,8 @@ def _save_leaderboard():
     data = {}
     for aid, ar in leaderboard.ratings.items():
         data[aid] = {"mu": ar.rating.mu, "sigma": ar.rating.sigma,
-                     "wins": ar.wins, "matches": ar.matches_played}
+                     "wins": ar.wins, "matches": ar.matches_played,
+                     "total_score": ar.total_score, "total_rounds": ar.total_rounds}
     LEADERBOARD_FILE.write_text(json.dumps(data, indent=2))
 
 def _rebuild_agent(row: dict) -> BaseAgent:
@@ -112,6 +113,8 @@ def _load_state():
                 ar.rating = leaderboard.env.create_rating(mu=r["mu"], sigma=r["sigma"])
                 ar.wins = r["wins"]
                 ar.matches_played = r["matches"]
+                ar.total_score = r.get("total_score", 0.0)
+                ar.total_rounds = r.get("total_rounds", 0)
 
     # Match history
     if HISTORY_FILE.exists():
@@ -244,6 +247,7 @@ async def list_agents():
             "score": round(rating.conservative_score, 2) if rating else 0.0,
             "wins": rating.wins if rating else 0,
             "matches": rating.matches_played if rating else 0,
+            "avg_pts_per_round": round(rating.avg_pts_per_round, 2) if rating else 0.0,
         })
     return result
 
@@ -303,6 +307,7 @@ async def get_leaderboard():
             "wins": ar.wins,
             "matches": ar.matches_played,
             "win_rate": round(ar.win_rate, 3),
+            "avg_pts_per_round": round(ar.avg_pts_per_round, 2),
             "agent_type": registered_agents.get(ar.agent_id, {}).get("agent_type", "?"),
             "provider": registered_agents.get(ar.agent_id, {}).get("provider", registered_agents.get(ar.agent_id, {}).get("strategy", "-")),
         }
